@@ -31,6 +31,19 @@ func CountLineBreaks(file *os.File) int64 {
 	return lineBreakCount
 }
 
+func CountWords(file *os.File) int64 {
+	var wordCount int64
+
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanWords)
+
+	for fileScanner.Scan() {
+		wordCount++
+	}
+
+	return wordCount
+}
+
 func main() {
 	command := os.Args[1]
 	filename := os.Args[2]
@@ -53,6 +66,10 @@ func main() {
 	case "-l":
 		lineBreaks := CountLineBreaks(file)
 		fmt.Println(lineBreaks, filename)
+
+	case "-w":
+		wordCount := CountWords(file)
+		fmt.Println(wordCount, filename)
 
 	default:
 		log.Fatal("invalid command argument")
