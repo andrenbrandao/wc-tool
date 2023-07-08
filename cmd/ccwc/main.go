@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -15,23 +16,46 @@ func CountBytes(file *os.File) (int64, error) {
 	return info.Size(), nil
 }
 
+func CountLineBreaks(file *os.File) int64 {
+	var lineBreakCount int64
+
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanRunes)
+
+	for fileScanner.Scan() {
+		if fileScanner.Text() == "\n" {
+			lineBreakCount++
+		}
+	}
+
+	return lineBreakCount
+}
+
 func main() {
 	command := os.Args[1]
 	filename := os.Args[2]
-
-	if command != "-c" {
-		log.Fatal("invalid command argument")
-	}
 
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file.Close()
 
-	bytes, err := CountBytes(file)
-	if err != nil {
-		log.Fatal(err)
+	switch command {
+	case "-c":
+		bytes, err := CountBytes(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(bytes, filename)
+
+	case "-l":
+		lineBreaks := CountLineBreaks(file)
+		fmt.Println(lineBreaks, filename)
+
+	default:
+		log.Fatal("invalid command argument")
 	}
 
-	fmt.Println(bytes, filename)
 }
