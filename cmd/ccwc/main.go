@@ -6,6 +6,15 @@ import (
 	"os"
 )
 
+func CountBytes(file *os.File) (int64, error) {
+	info, err := file.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	return info.Size(), nil
+}
+
 func main() {
 	command := os.Args[1]
 	filename := os.Args[2]
@@ -19,10 +28,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	info, err := file.Stat()
+	bytes, err := CountBytes(file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(info.Size(), filename)
+	fmt.Println(bytes, filename)
 }
