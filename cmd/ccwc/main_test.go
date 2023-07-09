@@ -12,7 +12,7 @@ func TestGetFileStats(t *testing.T) {
 		log.Fatal(err)
 	}
 	got := GetFileStats(f)
-	want := fileStats{bytes: 2432, lineBreakCount: 8, wordCount: 351}
+	want := fileStats{bytes: 2432, lineBreakCount: 8, wordCount: 351, charsCount: 2430}
 
 	if got != want {
 		t.Errorf("got %+v want %+v", got, want)

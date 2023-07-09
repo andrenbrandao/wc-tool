@@ -15,6 +15,7 @@ type fileStats struct {
 	bytes          int64
 	lineBreakCount int64
 	wordCount      int64
+	charsCount     int64
 }
 
 func GetFileStats(file *os.File) fileStats {
@@ -23,13 +24,13 @@ func GetFileStats(file *os.File) fileStats {
 	var wordCount int64
 	var bytes int64
 	var lineBreakCount int64
+	var charsCount int64
 
 	reader := bufio.NewReader(file)
 
 	inWord := false
 	for {
 		c, sz, err := reader.ReadRune()
-		bytes += int64(sz)
 
 		if err != nil {
 			if err == io.EOF {
@@ -41,6 +42,9 @@ func GetFileStats(file *os.File) fileStats {
 				log.Fatal(err)
 			}
 		}
+
+		bytes += int64(sz)
+		charsCount++
 
 		if unicode.IsSpace(c) {
 			if inWord {
@@ -55,7 +59,7 @@ func GetFileStats(file *os.File) fileStats {
 		}
 	}
 
-	return fileStats{bytes: bytes, lineBreakCount: lineBreakCount, wordCount: wordCount}
+	return fileStats{bytes: bytes, lineBreakCount: lineBreakCount, wordCount: wordCount, charsCount: charsCount}
 }
 
 func main() {
@@ -64,6 +68,7 @@ func main() {
 
 	printLineBreaks := false
 	printWords := false
+	printChars := false
 	printBytes := false
 	for _, arg := range args {
 		if arg[0] == '-' {
@@ -74,6 +79,9 @@ func main() {
 
 			case "-w":
 				printWords = true
+
+			case "-m":
+				printChars = true
 
 			case "-c":
 				printBytes = true
@@ -86,7 +94,7 @@ func main() {
 		}
 	}
 
-	if !printLineBreaks && !printWords && !printBytes {
+	if !printLineBreaks && !printWords && !printChars && !printBytes {
 		printLineBreaks = true
 		printWords = true
 		printBytes = true
@@ -117,6 +125,10 @@ func main() {
 
 	if printWords {
 		cols = append(cols, strconv.FormatInt(fStats.wordCount, 10))
+	}
+
+	if printChars {
+		cols = append(cols, strconv.FormatInt(fStats.charsCount, 10))
 	}
 
 	if printBytes {

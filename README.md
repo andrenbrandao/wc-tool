@@ -23,6 +23,11 @@ The following are the possible arguments:
 > ./bin/ccwc -l test.text
 7137 test.txt
 
+# Outputs the number of characters
+
+> ./bin/ccwc -m test.txt
+339120 test.txt
+
 # Outputs the number of words
 
 > ./bin/ccwc -w test.text
