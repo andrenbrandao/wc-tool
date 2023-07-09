@@ -58,10 +58,6 @@ func GetFileStats(file *os.File) fileStats {
 	return fileStats{bytes: bytes, lineBreakCount: lineBreakCount, wordCount: wordCount}
 }
 
-func getSupportedOptions() []string {
-	return []string{"-l", "-w", "-c"}
-}
-
 func main() {
 	args := os.Args[1:]
 	var filename string
