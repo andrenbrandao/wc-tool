@@ -64,15 +64,36 @@ func getSupportedOptions() []string {
 
 func main() {
 	args := os.Args[1:]
-	var options []string
 	var filename string
 
+	printLineBreaks := false
+	printWords := false
+	printBytes := false
 	for _, arg := range args {
 		if arg[0] == '-' {
-			options = append(options, arg)
+
+			switch arg {
+			case "-l":
+				printLineBreaks = true
+
+			case "-w":
+				printWords = true
+
+			case "-c":
+				printBytes = true
+
+			default:
+				log.Fatal("invalid command argument")
+			}
 		} else {
 			filename = arg
 		}
+	}
+
+	if !printLineBreaks && !printWords && !printBytes {
+		printLineBreaks = true
+		printWords = true
+		printBytes = true
 	}
 
 	stat, err := os.Stdin.Stat()
@@ -91,32 +112,19 @@ func main() {
 		defer file.Close()
 	}
 
-	if len(options) == 0 {
-		options = getSupportedOptions()
-	}
-
 	fStats := GetFileStats(file)
 	var cols []string
-	for _, supportedOption := range getSupportedOptions() {
-		for _, option := range options {
-			if supportedOption != option {
-				continue
-			}
 
-			switch option {
-			case "-c":
-				cols = append(cols, strconv.FormatInt(fStats.bytes, 10))
+	if printLineBreaks {
+		cols = append(cols, strconv.FormatInt(fStats.lineBreakCount, 10))
+	}
 
-			case "-l":
-				cols = append(cols, strconv.FormatInt(fStats.lineBreakCount, 10))
+	if printWords {
+		cols = append(cols, strconv.FormatInt(fStats.wordCount, 10))
+	}
 
-			case "-w":
-				cols = append(cols, strconv.FormatInt(fStats.wordCount, 10))
-
-			default:
-				log.Fatal("invalid command argument")
-			}
-		}
+	if printBytes {
+		cols = append(cols, strconv.FormatInt(fStats.bytes, 10))
 	}
 
 	cols = append(cols, filename)
