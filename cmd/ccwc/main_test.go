@@ -11,7 +11,7 @@ func TestCountBytes(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	got, _ := CountBytes(f)
+	got := CountBytes(f)
 	var want int64 = 2432
 
 	if got != want {

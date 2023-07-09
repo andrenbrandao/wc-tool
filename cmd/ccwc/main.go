@@ -10,13 +10,18 @@ import (
 	"strings"
 )
 
-func CountBytes(file *os.File) (int64, error) {
-	info, err := file.Stat()
-	if err != nil {
-		return 0, err
+func CountBytes(file *os.File) int64 {
+	file.Seek(0, io.SeekStart)
+	var bytes int64
+
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanBytes)
+
+	for fileScanner.Scan() {
+		bytes++
 	}
 
-	return info.Size(), nil
+	return bytes
 }
 
 func CountLineBreaks(file *os.File) int64 {
@@ -72,15 +77,25 @@ func main() {
 		}
 	}
 
-	if len(options) == 0 {
-		options = getSupportedOptions()
-	}
-
-	file, err := os.Open(filename)
+	stat, err := os.Stdin.Stat()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+
+	var file *os.File
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		file = os.Stdin
+	} else {
+		file, err = os.Open(filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+	}
+
+	if len(options) == 0 {
+		options = getSupportedOptions()
+	}
 
 	fStats := fileStats{}
 	var cols []string
@@ -92,10 +107,7 @@ func main() {
 
 			switch option {
 			case "-c":
-				bytes, err := CountBytes(file)
-				if err != nil {
-					log.Fatal(err)
-				}
+				bytes := CountBytes(file)
 				fStats.bytes = bytes
 				cols = append(cols, strconv.FormatInt(bytes, 10))
 
