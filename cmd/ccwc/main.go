@@ -8,56 +8,54 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 )
-
-func CountBytes(file *os.File) int64 {
-	file.Seek(0, io.SeekStart)
-	var bytes int64
-
-	fileScanner := bufio.NewScanner(file)
-	fileScanner.Split(bufio.ScanBytes)
-
-	for fileScanner.Scan() {
-		bytes++
-	}
-
-	return bytes
-}
-
-func CountLineBreaks(file *os.File) int64 {
-	file.Seek(0, io.SeekStart)
-	var lineBreakCount int64
-
-	fileScanner := bufio.NewScanner(file)
-	fileScanner.Split(bufio.ScanRunes)
-
-	for fileScanner.Scan() {
-		if fileScanner.Text() == "\n" {
-			lineBreakCount++
-		}
-	}
-
-	return lineBreakCount
-}
-
-func CountWords(file *os.File) int64 {
-	file.Seek(0, io.SeekStart)
-	var wordCount int64
-
-	fileScanner := bufio.NewScanner(file)
-	fileScanner.Split(bufio.ScanWords)
-
-	for fileScanner.Scan() {
-		wordCount++
-	}
-
-	return wordCount
-}
 
 type fileStats struct {
 	bytes          int64
 	lineBreakCount int64
 	wordCount      int64
+}
+
+func GetFileStats(file *os.File) fileStats {
+	file.Seek(0, io.SeekStart)
+
+	var wordCount int64
+	var bytes int64
+	var lineBreakCount int64
+
+	reader := bufio.NewReader(file)
+
+	inWord := false
+	for {
+		c, sz, err := reader.ReadRune()
+		bytes += int64(sz)
+
+		if err != nil {
+			if err == io.EOF {
+				if inWord {
+					wordCount++
+				}
+				break
+			} else {
+				log.Fatal(err)
+			}
+		}
+
+		if unicode.IsSpace(c) {
+			if inWord {
+				wordCount++
+			}
+			if c == '\n' {
+				lineBreakCount++
+			}
+			inWord = false
+		} else {
+			inWord = true
+		}
+	}
+
+	return fileStats{bytes: bytes, lineBreakCount: lineBreakCount, wordCount: wordCount}
 }
 
 func getSupportedOptions() []string {
@@ -97,7 +95,7 @@ func main() {
 		options = getSupportedOptions()
 	}
 
-	fStats := fileStats{}
+	fStats := GetFileStats(file)
 	var cols []string
 	for _, supportedOption := range getSupportedOptions() {
 		for _, option := range options {
@@ -107,19 +105,13 @@ func main() {
 
 			switch option {
 			case "-c":
-				bytes := CountBytes(file)
-				fStats.bytes = bytes
-				cols = append(cols, strconv.FormatInt(bytes, 10))
+				cols = append(cols, strconv.FormatInt(fStats.bytes, 10))
 
 			case "-l":
-				lineBreakCount := CountLineBreaks(file)
-				fStats.lineBreakCount = lineBreakCount
-				cols = append(cols, strconv.FormatInt(lineBreakCount, 10))
+				cols = append(cols, strconv.FormatInt(fStats.lineBreakCount, 10))
 
 			case "-w":
-				wordCount := CountWords(file)
-				fStats.wordCount = wordCount
-				cols = append(cols, strconv.FormatInt(wordCount, 10))
+				cols = append(cols, strconv.FormatInt(fStats.wordCount, 10))
 
 			default:
 				log.Fatal("invalid command argument")

@@ -6,41 +6,15 @@ import (
 	"testing"
 )
 
-func TestCountBytes(t *testing.T) {
+func TestGetFileStats(t *testing.T) {
 	f, err := os.Open("testdata/data.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
-	got := CountBytes(f)
-	var want int64 = 2432
+	got := GetFileStats(f)
+	want := fileStats{bytes: 2432, lineBreakCount: 8, wordCount: 351}
 
 	if got != want {
-		t.Errorf("got %d want %d", got, want)
-	}
-}
-
-func TestCountLineBreaks(t *testing.T) {
-	f, err := os.Open("testdata/data.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	got := CountLineBreaks(f)
-	var want int64 = 8
-
-	if got != want {
-		t.Errorf("got %d want %d", got, want)
-	}
-}
-
-func TestCountWords(t *testing.T) {
-	f, err := os.Open("testdata/data.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	got := CountWords(f)
-	var want int64 = 351
-
-	if got != want {
-		t.Errorf("got %d want %d", got, want)
+		t.Errorf("got %+v want %+v", got, want)
 	}
 }
