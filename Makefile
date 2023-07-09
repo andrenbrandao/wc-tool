@@ -3,3 +3,6 @@ build:
 
 clean:
 	rm -rf bin/
+
+test:
+	cd cmd/ccwc/ && pwd && go test -v

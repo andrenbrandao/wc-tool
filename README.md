@@ -45,6 +45,19 @@ You can also read from standard input
 7137
 ```
 
+## How to run the tests
+
+Execute `make test`
+
+You should see a result matching something like:
+
+```bash
+=== RUN   TestGetFileStats
+--- PASS: TestGetFileStats (0.00s)
+PASS
+ok      github.com/andrenbrandao/wc-tool/cmd/ccwc       0.001s
+```
+
 ## License
 
 [MIT](LICENSE) © André Brandão
