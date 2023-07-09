@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -62,8 +63,48 @@ func GetFileStats(file *os.File) fileStats {
 	return fileStats{bytes: bytes, lineBreakCount: lineBreakCount, wordCount: wordCount, charsCount: charsCount}
 }
 
-func main() {
-	args := os.Args[1:]
+type OSProcess interface {
+	args() []string
+}
+
+type Process struct{}
+
+func (p *Process) args() []string {
+	return os.Args
+}
+
+type StubbedProcess struct {
+	_args []string
+}
+
+func (p *StubbedProcess) args() []string {
+	a := []string{"nulled_process_go"}
+	a = append(a, p._args...)
+	return a
+}
+
+type CommandLine struct {
+	process OSProcess
+}
+
+func (c *CommandLine) args() []string {
+	return c.process.args()
+}
+
+func NewCommandLine() *CommandLine {
+	return &CommandLine{&Process{}}
+}
+
+func NewNullCommandLine(args []string) *CommandLine {
+	return &CommandLine{&StubbedProcess{args}}
+}
+
+type App struct {
+	commandLine *CommandLine
+}
+
+func (a App) run() (string, error) {
+	args := a.commandLine.args()[1:]
 	var filename string
 
 	printLineBreaks := false
@@ -87,7 +128,7 @@ func main() {
 				printBytes = true
 
 			default:
-				log.Fatal("invalid command argument")
+				return "", errors.New("invalid command argument")
 			}
 		} else {
 			filename = arg
@@ -102,7 +143,7 @@ func main() {
 
 	stat, err := os.Stdin.Stat()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	var file *os.File
@@ -111,7 +152,7 @@ func main() {
 	} else {
 		file, err = os.Open(filename)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 		defer file.Close()
 	}
@@ -136,5 +177,18 @@ func main() {
 	}
 
 	cols = append(cols, filename)
-	fmt.Println(strings.Join(cols, " "))
+	return strings.Join(cols, " "), nil
+}
+
+func main() {
+	commandLine := NewCommandLine()
+	app := App{commandLine}
+
+	res, err := app.run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(res)
 }
