@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -65,22 +64,36 @@ func GetFileStats(file *os.File) fileStats {
 
 type OSProcess interface {
 	args() []string
+	writeOutput(s string) error
 }
 
-type Process struct{}
+type Process struct {
+	output io.Writer
+}
 
 func (p *Process) args() []string {
 	return os.Args
 }
 
+func (p *Process) writeOutput(s string) error {
+	_, err := fmt.Fprint(p.output, s)
+	return err
+}
+
 type StubbedProcess struct {
-	_args []string
+	_args  []string
+	output io.Writer
 }
 
 func (p *StubbedProcess) args() []string {
 	a := []string{"nulled_process_go"}
 	a = append(a, p._args...)
 	return a
+}
+
+func (p *StubbedProcess) writeOutput(s string) error {
+	_, err := fmt.Fprint(p.output, s)
+	return err
 }
 
 type CommandLine struct {
@@ -92,18 +105,18 @@ func (c *CommandLine) args() []string {
 }
 
 func NewCommandLine() *CommandLine {
-	return &CommandLine{&Process{}}
+	return &CommandLine{&Process{output: os.Stdout}}
 }
 
-func NewNullCommandLine(args []string) *CommandLine {
-	return &CommandLine{&StubbedProcess{args}}
+func NewNullCommandLine(args []string, output io.Writer) *CommandLine {
+	return &CommandLine{&StubbedProcess{_args: args, output: output}}
 }
 
 type App struct {
 	commandLine *CommandLine
 }
 
-func (a App) run() (string, error) {
+func (a App) run() {
 	args := a.commandLine.args()[1:]
 	var filename string
 
@@ -128,7 +141,7 @@ func (a App) run() (string, error) {
 				printBytes = true
 
 			default:
-				return "", errors.New("invalid command argument")
+				log.Fatal("invalid command argument")
 			}
 		} else {
 			filename = arg
@@ -143,7 +156,7 @@ func (a App) run() (string, error) {
 
 	stat, err := os.Stdin.Stat()
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
 	var file *os.File
@@ -152,7 +165,7 @@ func (a App) run() (string, error) {
 	} else {
 		file, err = os.Open(filename)
 		if err != nil {
-			return "", err
+			log.Fatal(err)
 		}
 		defer file.Close()
 	}
@@ -177,18 +190,12 @@ func (a App) run() (string, error) {
 	}
 
 	cols = append(cols, filename)
-	return strings.Join(cols, " "), nil
+	res := strings.Join(cols, " ")
+	a.commandLine.process.writeOutput(res)
 }
 
 func main() {
 	commandLine := NewCommandLine()
 	app := App{commandLine}
-
-	res, err := app.run()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(res)
+	app.run()
 }

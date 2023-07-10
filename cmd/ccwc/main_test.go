@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"os"
 	"testing"
@@ -21,9 +22,11 @@ func TestGetFileStats(t *testing.T) {
 
 func TestApp(t *testing.T) {
 	run := func(args []string) (string, error) {
-		commandLine := NewNullCommandLine(args)
+		buffer := &bytes.Buffer{}
+		commandLine := NewNullCommandLine(args, buffer)
 		app := App{commandLine}
-		return app.run()
+		app.run()
+		return buffer.String(), nil
 	}
 
 	t.Run("without arguments", func(t *testing.T) {
