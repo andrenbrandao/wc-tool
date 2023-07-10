@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -63,36 +64,16 @@ func GetFileStats(file *os.File) fileStats {
 }
 
 func main() {
-	args := os.Args[1:]
-	var filename string
+	var printLineBreaks, printWords, printChars, printBytes bool
 
-	printLineBreaks := false
-	printWords := false
-	printChars := false
-	printBytes := false
-	for _, arg := range args {
-		if arg[0] == '-' {
+	flag.BoolVar(&printLineBreaks, "l", false, "print line breaks")
+	flag.BoolVar(&printWords, "w", false, "print words")
+	flag.BoolVar(&printChars, "m", false, "print chars")
+	flag.BoolVar(&printBytes, "c", false, "print bytes")
 
-			switch arg {
-			case "-l":
-				printLineBreaks = true
+	flag.Parse()
 
-			case "-w":
-				printWords = true
-
-			case "-m":
-				printChars = true
-
-			case "-c":
-				printBytes = true
-
-			default:
-				log.Fatal("invalid command argument")
-			}
-		} else {
-			filename = arg
-		}
-	}
+	filename := flag.CommandLine.Arg(0)
 
 	if !printLineBreaks && !printWords && !printChars && !printBytes {
 		printLineBreaks = true
