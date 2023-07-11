@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -19,8 +20,6 @@ type fileStats struct {
 }
 
 func GetFileStats(file *os.File) fileStats {
-	file.Seek(0, io.SeekStart)
-
 	var wordCount int64
 	var bytes int64
 	var lineBreakCount int64
@@ -62,91 +61,90 @@ func GetFileStats(file *os.File) fileStats {
 	return fileStats{bytes: bytes, lineBreakCount: lineBreakCount, wordCount: wordCount, charsCount: charsCount}
 }
 
-type OSProcess interface {
-	args() []string
+type ICommandLine interface {
+	args() *Args
 	writeOutput(s string) error
 }
-
-type Process struct {
+type CommandLine struct {
 	output io.Writer
+	flag   *flag.FlagSet
 }
 
-func (p *Process) args() []string {
-	return os.Args
-}
-
-func (p *Process) writeOutput(s string) error {
-	_, err := fmt.Fprint(p.output, s)
-	return err
-}
-
-type StubbedProcess struct {
+type StubbedCommandLine struct {
 	_args  []string
 	output io.Writer
+	flag   *flag.FlagSet
 }
 
-func (p *StubbedProcess) args() []string {
-	a := []string{"nulled_process_go"}
-	a = append(a, p._args...)
-	return a
+func (c *CommandLine) args() *Args {
+	var printLineBreaks, printWords, printChars, printBytes bool
+	flag.BoolVar(&printLineBreaks, "l", false, "print line breaks")
+	flag.BoolVar(&printWords, "w", false, "print words")
+	flag.BoolVar(&printChars, "m", false, "print chars")
+	flag.BoolVar(&printBytes, "c", false, "print bytes")
+
+	flag.Parse()
+
+	filename := flag.CommandLine.Arg(0)
+
+	return &Args{printLineBreaks, printWords, printChars, printBytes, filename}
 }
 
-func (p *StubbedProcess) writeOutput(s string) error {
-	_, err := fmt.Fprint(p.output, s)
+func (c *CommandLine) writeOutput(s string) error {
+	_, err := fmt.Fprint(c.output, s+"\n")
 	return err
-}
-
-type CommandLine struct {
-	process OSProcess
-}
-
-func (c *CommandLine) args() []string {
-	return c.process.args()
 }
 
 func NewCommandLine() *CommandLine {
-	return &CommandLine{&Process{output: os.Stdout}}
+	return &CommandLine{output: os.Stdout, flag: flag.NewFlagSet(os.Args[0], flag.ExitOnError)}
 }
 
-func NewNullCommandLine(args []string, output io.Writer) *CommandLine {
-	return &CommandLine{&StubbedProcess{_args: args, output: output}}
+func (c *StubbedCommandLine) writeOutput(s string) error {
+	_, err := fmt.Fprint(c.output, s)
+	return err
+}
+
+func (c *StubbedCommandLine) args() *Args {
+	var printLineBreaks, printWords, printChars, printBytes bool
+
+	c.flag.BoolVar(&printLineBreaks, "l", false, "print line breaks")
+	c.flag.BoolVar(&printWords, "w", false, "print words")
+	c.flag.BoolVar(&printChars, "m", false, "print chars")
+	c.flag.BoolVar(&printBytes, "c", false, "print bytes")
+
+	c.flag.Parse(c._args)
+
+	filename := c.flag.Arg(0)
+
+	return &Args{printLineBreaks, printWords, printChars, printBytes, filename}
+}
+
+func NewNullCommandLine(args []string, output io.Writer) *StubbedCommandLine {
+	return &StubbedCommandLine{_args: args, output: output, flag: flag.NewFlagSet(os.Args[0], flag.ExitOnError)}
 }
 
 type App struct {
-	commandLine *CommandLine
+	commandLine ICommandLine
 }
 
-func (a App) run() {
-	args := a.commandLine.args()[1:]
+type Args struct {
+	printLineBreaks,
+	printWords,
+	printChars,
+	printBytes bool
+	filename string
+}
+
+func (a *App) run() {
+	var printLineBreaks, printWords, printChars, printBytes bool
 	var filename string
 
-	printLineBreaks := false
-	printWords := false
-	printChars := false
-	printBytes := false
-	for _, arg := range args {
-		if arg[0] == '-' {
-
-			switch arg {
-			case "-l":
-				printLineBreaks = true
-
-			case "-w":
-				printWords = true
-
-			case "-m":
-				printChars = true
-
-			case "-c":
-				printBytes = true
-
-			default:
-				log.Fatal("invalid command argument")
-			}
-		} else {
-			filename = arg
-		}
-	}
+	args := a.commandLine.args()
+	printLineBreaks = args.printLineBreaks
+	printWords = args.printWords
+	printChars = args.printChars
+	printBytes = args.printBytes
+	filename = args.filename
 
 	if !printLineBreaks && !printWords && !printChars && !printBytes {
 		printLineBreaks = true
@@ -191,7 +189,7 @@ func (a App) run() {
 
 	cols = append(cols, filename)
 	res := strings.Join(cols, " ")
-	a.commandLine.process.writeOutput(res)
+	a.commandLine.writeOutput(res)
 }
 
 func main() {
