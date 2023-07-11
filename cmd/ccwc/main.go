@@ -19,8 +19,6 @@ type fileStats struct {
 }
 
 func GetFileStats(file *os.File) fileStats {
-	file.Seek(0, io.SeekStart)
-
 	var wordCount int64
 	var bytes int64
 	var lineBreakCount int64
@@ -76,7 +74,7 @@ func (p *Process) args() []string {
 }
 
 func (p *Process) writeOutput(s string) error {
-	_, err := fmt.Fprint(p.output, s)
+	_, err := fmt.Fprint(p.output, s+"\n")
 	return err
 }
 
