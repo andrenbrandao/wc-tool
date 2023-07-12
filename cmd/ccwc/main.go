@@ -20,8 +20,6 @@ type fileStats struct {
 }
 
 func GetFileStats(file *os.File) fileStats {
-	file.Seek(0, io.SeekStart)
-
 	var wordCount int64
 	var bytes int64
 	var lineBreakCount int64
